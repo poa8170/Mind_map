@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>思路圖</title>
+<style>
+/* ===== 樣式 ===== */
+:root{--bg:#eef2f3;--panel:#fbfcfc;--ink:#26343a;--mute:#6b7c83;--line:#d5dde0;
+--opt:#2f7f8f;--cond:#c98a2b;--feel:#7a62a8;--conf:#c2483f;--accent:#2f7f8f}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);height:100vh;display:flex;flex-direction:column}
+button{font:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+button.danger{color:var(--conf)}button.on{background:#e3f0f2;border-color:var(--accent)}
+input,textarea,select{font:inherit;width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+textarea{resize:vertical;min-height:70px}
+.hidden{display:none!important}
+/* 首頁 */
+#home{max-width:880px;width:100%;margin:0 auto;padding:40px 24px;overflow:auto}
+#home h1{font-size:30px;margin:0 0 6px;letter-spacing:.08em}
+#home p.sub{color:var(--mute);margin:0 0 24px}
+.bar{display:flex;gap:10px;margin-bottom:22px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h3{margin:0 0 6px;font-size:17px}.card .meta{font-size:13px;color:var(--mute);margin-bottom:12px}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:#e3f0f2;color:var(--opt);margin-right:6px}
+.tag.done{background:#ece6f5;color:var(--feel)}
+.card .row{display:flex;gap:8px}
+.empty{padding:50px 20px;text-align:center;color:var(--mute);background:var(--panel);border:1px dashed var(--line);border-radius:12px}
+/* 編輯器 */
+#editor{flex:1;display:flex;flex-direction:column;min-height:0}
+#top{display:flex;gap:8px;align-items:center;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+#top .title{font-weight:600;margin:0 8px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#top .sp{flex:1}
+#main{flex:1;display:flex;min-height:0}
+#stage{flex:1;position:relative;background:radial-gradient(circle,#d3dcdf 1px,transparent 1px) 0 0/22px 22px,var(--bg)}
+#svg{width:100%;height:100%;display:block;cursor:grab;user-select:none}
+#side{width:290px;background:var(--panel);border-left:1px solid var(--line);padding:14px;overflow:auto}
+#side.collapsed{display:none}
+#side h4{margin:0 0 10px;font-size:15px}
+#side label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+.seg{display:flex;gap:4px}.seg button{flex:1;padding:5px 4px;font-size:13px}
+.legend div{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}
+.node text{pointer-events:none;font-size:14px;fill:#fff}
+.handle{fill:#fff;stroke:var(--ink);stroke-width:1.5;cursor:crosshair}
+.hint{font-size:13px;color:var(--mute);line-height:1.6}
+#wiz{position:fixed;inset:0;background:var(--bg);z-index:40;display:flex;align-items:center;justify-content:center;overflow:auto}
+#wiz .box{width:min(520px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:30px}
+#wiz .stp{color:var(--mute);font-size:13px;margin-bottom:8px}#wiz h2{margin:0 0 6px;font-size:22px}
+#wiz .hint{margin:0 0 18px}#wiz .fld{display:grid;gap:8px;margin-bottom:10px}
+#wiz .nav{display:flex;gap:8px;margin-top:22px;align-items:center}#wiz .nav .sp{flex:1}
+#wiz .err{color:var(--conf);font-size:13px;min-height:18px;margin-top:8px}
+#wiz .frow{display:flex;gap:6px}#wiz .wx{flex:none;padding:6px 10px;color:var(--mute)}
+#banner{background:#ece6f5;padding:10px 16px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.6}
+#ttl{width:260px;font-weight:600;margin:0 8px;border-color:transparent;background:transparent}
+#ttl:hover,#ttl:focus{border-color:var(--line);background:#fff}
+.mk{display:flex;gap:8px;margin:10px 0;font-size:13px;line-height:1.5}
+.mk img,.mk .noimg{width:64px;height:48px;object-fit:cover;border:1px solid var(--line);border-radius:6px;flex:none;background:#fff}
+.mk img{cursor:zoom-in}.mk small{color:var(--mute)}.mk button{padding:2px 8px;font-size:12px;margin-right:4px}
+#replay{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
+#replay .rtop{display:flex;gap:12px;align-items:center;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+#replay .rimg{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px}
+#replay .rimg img{max-width:100%;min-height:0;flex:1;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff}
+#replay .rinfo{padding:4px 20px 12px;text-align:center;line-height:1.7}
+#replay .rtl{padding:10px 20px 16px;background:var(--panel);border-top:1px solid var(--line)}
+#replay .rnodes{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px}
+#replay .rnodes button{flex:1;min-width:96px;font-size:13px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#replay .rctl{display:flex;gap:12px;align-items:center}
+.rem{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px;line-height:1.6}
+.rem button{padding:1px 8px;font-size:12px;margin-top:4px}
+button{transition:background .15s,border-color .15s}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.45;cursor:default}
+.card{transition:box-shadow .15s}.card:hover{box-shadow:0 4px 18px rgba(38,52,58,.1)}
+.node:hover rect{filter:brightness(1.08)}
+#help h3{margin:0 0 12px;font-size:18px}#help ol{margin:0;padding-left:20px;line-height:1.8;font-size:14px}#help li{margin-bottom:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+#mask{position:fixed;inset:0;background:rgba(38,52,58,.35);display:flex;align-items:center;justify-content:center;z-index:50}
+#dlg{max-height:94vh;overflow:auto;background:var(--panel);border-radius:12px;padding:22px;width:min(420px,90vw);box-shadow:0 10px 40px rgba(0,0,0,.2)}
+#dlg p{margin:0 0 14px;line-height:1.6}#dlg .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+/* 圖片預覽：圖片與註記各自受視窗限制，關閉按鈕始終留在底部。 */
+#dlg.mark-preview{width:min(900px,92vw);height:min(800px,calc(100vh - 32px));height:min(800px,calc(100dvh - 32px));max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);padding:16px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+#dlg.mark-preview .mark-image{flex:1;min-height:0;min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:8px;background:#fff}
+#dlg.mark-preview .mark-image img{display:block;width:100%;height:100%;object-fit:contain}
+#dlg.mark-preview .mark-note{flex:0 1 auto;min-height:0;max-height:25vh;max-height:25dvh;overflow:auto;overflow-wrap:anywhere;margin:0}
+#dlg.mark-preview .row{flex:none;margin:0}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 16px;border-radius:8px;font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- ===== 首頁 ===== -->
+<section id="home">
+  <h1>思路圖</h1>
+  <p class="sub">把腦中打結的想法攤開來看。App 只幫你整理，決定永遠是你的。</p>
+  <div class="bar">
+    <button class="pri" id="btnNew">＋ 新增決策</button>
+    <button id="btnImport">匯入 JSON</button>
+    <button id="btnHelp0">說明</button>
+    <input type="file" id="fileIn" accept=".json" class="hidden">
+  </div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<!-- ===== 編輯畫布 ===== -->
+<section id="editor" class="hidden">
+  <div id="top">
+    <button id="btnBack">← 清單</button>
+    <input id="ttl" maxlength="80" title="點一下可修改標題">
+    <button data-add="option" title="新增選項">◆ 選項</button>
+    <button data-add="condition" title="新增條件">● 條件</button>
+    <button data-add="feeling" title="新增感受">♥ 感受</button>
+    <button id="btnUndo">復原</button>
+    <button id="btnFit">回到全覽</button>
+    <button id="btnReplay">回放</button>
+    <button id="btnExport">匯出</button>
+    <button id="btnMark">標記這一刻</button>
+    <button id="btnDecide" class="pri">做出決定</button>
+    <span class="sp"></span>
+    <button id="btnHelp">說明</button>
+    <button id="btnSide">側邊欄</button>
+  </div>
+  <div id="banner" class="hidden"></div>
+  <div id="main">
+    <div id="stage"><svg id="svg"><defs>
+      <marker id="arrC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#26343a"/></marker>
+      <marker id="arrD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5b6b72"/></marker>
+      <marker id="xmk" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9"><path d="M1 1L9 9M9 1L1 9" stroke="#c2483f" stroke-width="2"/></marker>
+    </defs><g id="world"><g id="gE"></g><g id="gN"></g><line id="drag" stroke="#2f7f8f" stroke-width="2" stroke-dasharray="4 3" class="hidden"/></g></svg></div>
+    <aside id="side"></aside>
+  </div>
+</section>
+<section id="wiz" class="hidden"><div class="box" id="wbox"></div></section>
+<section id="replay" class="hidden"></section>
+<div id="mask" class="hidden"><div id="dlg"></div></div>
+<div id="toast" class="hidden"></div>
+
+<script>
+/* ===== 常數與工具 ===== */
+const KEY='sirotu.v1';
+const TYPES={option:{n:'選項',c:'#2f7f8f',i:'◆'},condition:{n:'條件',c:'#c98a2b',i:'●'},feeling:{n:'感受',c:'#7a62a8',i:'♥'}};
+const ETYPES={cause:{n:'因果（導致）'},conflict:{n:'衝突／互斥'},dependency:{n:'依賴（先有才能有）'}};
+const WN=['有點在意','在意','非常在意'],W=[112,140,172],H=[44,54,66],WRAP=[7,9,11];
+const $=s=>document.querySelector(s);
+const uid=()=>Math.random().toString(36).slice(2,10);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const NS='http://www.w3.org/2000/svg';
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),2600)}
+
+/* ===== 對話框（取代 prompt / confirm，因為部分環境會封鎖原生對話框） ===== */
+function dialog(msg,input,okText,val,ph){
+  return new Promise(res=>{
+    const m=$('#mask'),d=$('#dlg');
+    d.innerHTML=`<p>${esc(msg)}</p>${input?`<input id="dIn" maxlength="80" value="${esc(val||'')}" placeholder="${esc(ph||'')}">`:''}<div class="row"><button id="dNo">取消</button><button class="pri" id="dOk">${okText||'確定'}</button></div>`;
+    m.classList.remove('hidden');const inp=$('#dIn');if(inp)inp.focus();
+    const close=v=>{m.classList.add('hidden');res(v)};
+    $('#dNo').onclick=()=>close(null);
+    $('#dOk').onclick=()=>close(inp?inp.value:true);
+    if(inp)inp.onkeydown=e=>{if(e.key==='Enter')close(inp.value);if(e.key==='Escape')close(null)};
+  });
+}
+
+/* ===== 本機儲存 ===== */
+let db=[];try{db=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){db=[]}
+function save(){
+  if(cur)cur.updatedAt=new Date().toISOString();
+  try{localStorage.setItem(KEY,JSON.stringify(db))}
+  catch(e){toast('儲存失敗：瀏覽器空間不足。請先匯出備份。')}
+}
+
+/* ===== 首頁 ===== */
+let cur=null,sel=null,view={x:0,y:0,k:1},undo=[];
+function renderHome(){
+  const box=$('#cards');
+  if(!db.length){box.innerHTML='<div class="empty">還沒有任何決策。<br>想不透的事，從這裡開始整理。<br><br><button class="pri" onclick="newDecision()">開始新的決策</button></div>';return}
+  box.innerHTML=db.map(d=>{
+    const opt=d.decision&&d.nodes.find(n=>n.id===d.decision.optionId);
+    return `<div class="card"><h3>${esc(d.title)}</h3>
+    <div class="meta"><span class="tag ${d.status==='decided'?'done':''}">${d.status==='decided'?'已決定':'進行中'}</span>${d.createdAt.slice(0,10)}${opt?'<br>最終選擇：'+esc(opt.text):''}</div>
+    <div class="row"><button class="pri" onclick="openD('${d.id}')">開啟</button><button class="danger" onclick="delD('${d.id}')">刪除</button></div></div>`}).join('');
+}
+/* ===== 引導式開場 ===== */
+const STEPS=[
+ {q:'你想做的決定是什麼？',h:'用一句話就好，不用想得很完整。',ph:['例如：期末考還是旅行？']},
+ {q:'你目前有哪些選項？',h:'至少寫兩個。「什麼都不做」也可以是一個選項。',key:'opts',ph:['例如：留在家讀書','例如：出去玩兩天','例如：什麼都不做']},
+ {q:'做這個決定時，你在乎哪些事？',h:'想到什麼寫什麼：時間、金錢、責任、心情……',key:'conds',ph:['例如：期末成績','例如：和朋友的感情','例如：花多少錢']},
+ {q:'你有沒有什麼感受或擔心？',h:'選填。說不出來也沒關係，可以直接完成。',key:'feels',ph:['例如：怕錯過這次機會','例如：覺得有點愧疚']}];
+let wd=null,wstep=0;
+function newDecision(){wd={title:'',opts:[''],conds:[''],feels:['']};wstep=0;$('#wiz').classList.remove('hidden');wizRender()}
+function wizRead(){ // 把畫面上的輸入欄讀回 wd
+  const ins=[...document.querySelectorAll('#wbox .wi')].map(i=>i.value);
+  if(wstep===0)wd.title=ins[0]||'';else wd[STEPS[wstep].key]=ins.length?ins:[''];
+}
+function wizRender(){
+  const S=STEPS[wstep],list=wstep===0?[wd.title]:wd[S.key];
+  $('#wbox').innerHTML=`<div class="stp">第 ${wstep+1} 步，共 4 步</div><h2>${S.q}</h2><p class="hint">${S.h}</p>
+  <div class="fld">${list.map((v,i)=>`<div class="frow"><input class="wi" maxlength="80" value="${esc(v)}" placeholder="${S.ph[i%S.ph.length]}">${wstep?`<button class="wx" data-i="${i}" title="刪除這一欄">✕</button>`:''}</div>`).join('')}</div>
+  ${wstep?'<button id="wAdd">＋ 再加一欄</button>':''}<div class="err" id="wErr"></div>
+  <div class="nav"><button id="wSkip">略過引導，直接進畫布</button><span class="sp"></span>
+  ${wstep?'<button id="wBack">上一步</button>':'<button id="wCancel">取消</button>'}<button class="pri" id="wNext">${wstep===3?'完成，進入畫布':'下一步'}</button></div>`;
+  const ins=document.querySelectorAll('#wbox .wi');(ins[ins.length-1]).focus();
+  ins.forEach(i=>i.onkeydown=e=>{if(e.key==='Enter')$('#wNext').click()});
+  if($('#wAdd'))$('#wAdd').onclick=()=>{wizRead();wd[S.key].push('');wizRender()};
+  document.querySelectorAll('#wbox .wx').forEach(b=>b.onclick=()=>{wizRead();const a=wd[S.key];a.splice(+b.dataset.i,1);if(!a.length)a.push('');wizRender()});
+  if($('#wBack'))$('#wBack').onclick=()=>{wizRead();wstep--;wizRender()};
+  if($('#wCancel'))$('#wCancel').onclick=()=>{wd=null;$('#wiz').classList.add('hidden')};
+  $('#wSkip').onclick=()=>{wizRead();wizFinish(true)};
+  $('#wNext').onclick=()=>{
+    wizRead();const err=$('#wErr');
+    if(wstep===0&&!wd.title.trim())return err.textContent='請先寫下你想做的決定。';
+    if(wstep===1&&wd.opts.filter(x=>x.trim()).length<2)return err.textContent='請至少寫兩個選項。';
+    if(wstep===3)return wizFinish(false);
+    wstep++;wizRender();
+  };
+}
+function wizFinish(skipped){
+  const now=new Date().toISOString(),clean=a=>a.map(x=>x.trim()).filter(Boolean);
+  const d={id:uid(),title:wd.title.trim()||'未命名的決策',status:'active',createdAt:now,updatedAt:now,nodes:[],edges:[],marks:[],decision:null};
+  const rows=[['option',clean(wd.opts),0],['condition',clean(wd.conds),-170],['feeling',clean(wd.feels),170]];
+  rows.forEach(([type,arr,y])=>arr.forEach((t,i)=>d.nodes.push({id:uid(),type,text:t,weight:2,x:Math.round((i-(arr.length-1)/2)*190),y})));
+  // 自動標記「開始整理」（畫面圖片會在背景擷取）
+  addMark('開始整理',true,d);
+  db.unshift(d);save();wd=null;$('#wiz').classList.add('hidden');openD(d.id);
+}
+async function delD(id){const d=db.find(x=>x.id===id);if(await dialog('確定刪除「'+d.title+'」？此動作無法復原。',false,'刪除')){db=db.filter(x=>x.id!==id);save();renderHome()}}
+function openD(id){cur=db.find(x=>x.id===id);try{localStorage.setItem(KEY+'.cur',id)}catch(e){}sel=null;undo=[];$('#home').classList.add('hidden');$('#editor').classList.remove('hidden');$('#ttl').value=cur.title;updateBar();draw();fit();renderSide()}
+function goHome(){cur=null;try{localStorage.removeItem(KEY+'.cur')}catch(e){}$('#editor').classList.add('hidden');$('#home').classList.remove('hidden');renderHome()}
+$('#btnNew').onclick=newDecision;$('#btnBack').onclick=goHome;
+$('#btnImport').onclick=()=>$('#fileIn').click();
+$('#fileIn').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{
+    const d=cleanImport(JSON.parse(r.result));
+        if(db.some(x=>x.id===d.id)||!d.id){d.id=uid();d.title+='（副本）'}
+    db.unshift(d);save();renderHome();toast('已匯入')}
+    catch(_){toast('匯入失敗：這個檔案不是有效的思路圖 JSON。')}};
+  r.readAsText(f);e.target.value='';
+};
+
+/* ===== 復原 ===== */
+function snap(){undo.push(JSON.stringify({n:cur.nodes,e:cur.edges}));if(undo.length>60)undo.shift()}
+function doUndo(){if(isDecided())return toast('這個決策已封存。要修改請先重新開啟。');if(!undo.length)return toast('沒有可以復原的動作');const s=JSON.parse(undo.pop());cur.nodes=s.n;cur.edges=s.e;sel=null;save();draw();renderSide()}
+$('#btnUndo').onclick=doUndo;
+
+/* ===== 畫布繪製 ===== */
+const svg=$('#svg'),world=$('#world'),gN=$('#gN'),gE=$('#gE');
+const nW=n=>W[n.weight-1],nH=n=>H[n.weight-1];
+function wrap(t,m){const out=[];for(const raw of t.split('\n')){let s=raw;while(s.length>m){out.push(s.slice(0,m));s=s.slice(m)}out.push(s)}return out.slice(0,3)}
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+function clip(n,tx,ty){ // 線段由節點中心指向 (tx,ty)，取與矩形邊界的交點
+  const dx=tx-n.x,dy=ty-n.y,hw=nW(n)/2+3,hh=nH(n)/2+3;
+  const s=Math.min(dx?hw/Math.abs(dx):1e9,dy?hh/Math.abs(dy):1e9);
+  return[n.x+dx*Math.min(s,1),n.y+dy*Math.min(s,1)];
+}
+function draw(){
+  world.setAttribute('transform',`translate(${view.x} ${view.y}) scale(${view.k})`);
+  gE.innerHTML='';gN.innerHTML='';
+  const by=Object.fromEntries(cur.nodes.map(n=>[n.id,n]));
+  cur.edges.forEach(e=>{
+    const a=by[e.from],b=by[e.to];if(!a||!b)return;
+    const p=clip(a,b.x,b.y),q=clip(b,a.x,a.y),on=sel&&sel.kind==='e'&&sel.id===e.id;
+    const g=el('g',{style:'cursor:pointer'},gE);
+    el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:'transparent','stroke-width':14},g);
+    const st={cause:['#26343a',''],conflict:['#c2483f','8 5'],dependency:['#5b6b72','2 5']}[e.type];
+    const l=el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:st[0],'stroke-width':on?4:2.4,'stroke-dasharray':st[1],'stroke-linecap':'round'},g);
+    if(e.type==='cause')l.setAttribute('marker-end','url(#arrC)');
+    if(e.type==='dependency')l.setAttribute('marker-end','url(#arrD)');
+    if(e.type==='conflict'){l.setAttribute('marker-start','url(#xmk)');l.setAttribute('marker-end','url(#xmk)')}
+    if(e.note){const t=el('text',{x:(p[0]+q[0])/2,y:(p[1]+q[1])/2-6,'text-anchor':'middle','font-size':12,fill:'#26343a','paint-order':'stroke',stroke:'#eef2f3','stroke-width':4},g);t.textContent=e.note}
+    g.addEventListener('pointerdown',ev=>{ev.stopPropagation();sel={kind:'e',id:e.id};draw();renderSide()});
+  });
+  cur.nodes.forEach(n=>{
+    const T=TYPES[n.type],w=nW(n),h=nH(n),on=sel&&sel.kind==='n'&&sel.id===n.id;
+    const g=el('g',{class:'node',transform:`translate(${n.x-w/2} ${n.y-h/2})`,style:'cursor:move'},gN);
+    el('rect',{width:w,height:h,rx:n.type==='option'?6:n.type==='condition'?h/2:14,fill:T.c,stroke:on?'#26343a':'none','stroke-width':3},g);
+    const lines=wrap((T.i+' '+n.text).trim()||T.i,WRAP[n.weight-1]),fs=n.weight===3?16:n.weight===1?13:14;
+    const t=el('text',{x:w/2,y:h/2-(lines.length-1)*fs*.6+fs*.35,'text-anchor':'middle','font-size':fs},g);
+    lines.forEach((s,i)=>{const ts=el('tspan',{x:w/2,dy:i?fs*1.2:0},t);ts.textContent=s});
+    if(!isDecided()){
+      const hd=el('circle',{class:'handle',cx:w,cy:h/2,r:7},g);
+      hd.addEventListener('pointerdown',ev=>startLink(ev,n));
+    }
+    g.addEventListener('pointerdown',ev=>startDrag(ev,n));
+    g.addEventListener('dblclick',ev=>{ev.stopPropagation();sel={kind:'n',id:n.id};renderSide();const ta=$('#fText');if(ta)ta.focus()});
+  });
+}
+const isDecided=()=>cur&&cur.status==='decided';
+
+/* ===== 座標轉換、平移、縮放 ===== */
+function toWorld(ev){const r=svg.getBoundingClientRect();return[(ev.clientX-r.left-view.x)/view.k,(ev.clientY-r.top-view.y)/view.k]}
+svg.addEventListener('wheel',ev=>{
+  ev.preventDefault();const r=svg.getBoundingClientRect(),mx=ev.clientX-r.left,my=ev.clientY-r.top;
+  const k=Math.max(.2,Math.min(3,view.k*(ev.deltaY<0?1.1:.9)));
+  view.x=mx-(mx-view.x)*k/view.k;view.y=my-(my-view.y)*k/view.k;view.k=k;draw();
+},{passive:false});
+svg.addEventListener('pointerdown',ev=>{
+  if(ev.target!==svg&&ev.target.id!=='world')return;
+  if(sel){sel=null;draw();renderSide()}
+  const sx=ev.clientX,sy=ev.clientY,ox=view.x,oy=view.y;svg.style.cursor='grabbing';
+  const mv=e=>{view.x=ox+e.clientX-sx;view.y=oy+e.clientY-sy;world.setAttribute('transform',`translate(${view.x} ${view.y}) scale(${view.k})`)};
+  const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);svg.style.cursor='grab'};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);
+});
+svg.addEventListener('dblclick',ev=>{
+  if(isDecided()||(ev.target!==svg&&ev.target.id!=='world'))return;
+  const[x,y]=toWorld(ev);addNode('condition',x,y);
+});
+function fit(){
+  const r=svg.getBoundingClientRect();
+  if(!cur.nodes.length){view={x:r.width/2,y:r.height/2,k:1};draw();return}
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  cur.nodes.forEach(n=>{x0=Math.min(x0,n.x-nW(n)/2);x1=Math.max(x1,n.x+nW(n)/2);y0=Math.min(y0,n.y-nH(n)/2);y1=Math.max(y1,n.y+nH(n)/2)});
+  const k=Math.min(1.2,(r.width-120)/Math.max(1,x1-x0),(r.height-120)/Math.max(1,y1-y0));
+  view.k=k;view.x=r.width/2-(x0+x1)/2*k;view.y=r.height/2-(y0+y1)/2*k;draw();
+}
+$('#btnFit').onclick=fit;
+
+/* ===== 節點操作 ===== */
+function addNode(type,x,y){
+  if(isDecided())return toast('這個決策已封存。要修改請先重新開啟。');
+  if(x==null){const r=svg.getBoundingClientRect();[x,y]=toWorld({clientX:r.left+r.width/2+(Math.random()-.5)*160,clientY:r.top+r.height/2+(Math.random()-.5)*160})}
+  snap();const n={id:uid(),type,text:'',weight:2,x:Math.round(x),y:Math.round(y)};
+  cur.nodes.push(n);sel={kind:'n',id:n.id};save();draw();renderSide();setTimeout(()=>{const t=$('#fText');t&&t.focus()},30);
+}
+document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>addNode(b.dataset.add));
+function startDrag(ev,n){
+  ev.stopPropagation();sel={kind:'n',id:n.id};renderSide();
+  if(isDecided()){draw();return}
+  snap();let moved=false;const[sx,sy]=toWorld(ev),ox=n.x,oy=n.y;
+  const mv=e=>{const[x,y]=toWorld(e);n.x=Math.round(ox+x-sx);n.y=Math.round(oy+y-sy);moved=true;draw()};
+  const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);if(moved)save();else undo.pop();draw()};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);draw();
+}
+
+/* ===== 連線操作：從節點右側圓點拖曳到另一節點 ===== */
+function startLink(ev,a){
+  ev.stopPropagation();const ln=$('#drag');ln.classList.remove('hidden');
+  const mv=e=>{const[x,y]=toWorld(e);ln.setAttribute('x1',a.x);ln.setAttribute('y1',a.y);ln.setAttribute('x2',x);ln.setAttribute('y2',y)};
+  const up=e=>{
+    removeEventListener('pointermove',mv);removeEventListener('pointerup',up);ln.classList.add('hidden');
+    const[x,y]=toWorld(e);
+    const b=cur.nodes.find(n=>n.id!==a.id&&Math.abs(x-n.x)<=nW(n)/2&&Math.abs(y-n.y)<=nH(n)/2);
+    if(!b)return;
+    if(cur.edges.some(E=>(E.from===a.id&&E.to===b.id)||(E.from===b.id&&E.to===a.id)))return toast('這兩個想法之間已經有連線了');
+    snap();const ed={id:uid(),from:a.id,to:b.id,type:'cause',note:''};
+    cur.edges.push(ed);sel={kind:'e',id:ed.id};save();draw();renderSide();toast('請在右側選擇這條線的關係');
+  };
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);mv(ev);
+}
+
+/* ===== 刪除與快捷鍵 ===== */
+function delSel(){
+  if(!sel||isDecided())return;snap();
+  if(sel.kind==='n'){cur.nodes=cur.nodes.filter(n=>n.id!==sel.id);cur.edges=cur.edges.filter(e=>e.from!==sel.id&&e.to!==sel.id)}
+  else cur.edges=cur.edges.filter(e=>e.id!==sel.id);
+  sel=null;save();draw();renderSide();
+}
+addEventListener('keydown',e=>{
+  if(!$('#replay').classList.contains('hidden')){
+    if(e.key==='ArrowLeft'&&e.target.id!=='rpS')rpGo(rp.i-1);
+    if(e.key==='ArrowRight'&&e.target.id!=='rpS')rpGo(rp.i+1);
+    if(e.key==='Escape')closeReplay();
+    return;
+  }
+  if(!cur)return;const tag=document.activeElement.tagName;
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&tag!=='TEXTAREA'&&tag!=='INPUT'){e.preventDefault();doUndo()}
+  if((e.key==='Delete'||e.key==='Backspace')&&tag!=='TEXTAREA'&&tag!=='INPUT'){e.preventDefault();delSel()}
+});
+$('#btnSide').onclick=()=>$('#side').classList.toggle('collapsed');
+
+/* ===== 側邊欄 ===== */
+function renderSide(){
+  if(!cur)return;
+  const s=$('#side'),ro=isDecided()?'disabled':'';
+  if(!sel){
+    s.innerHTML=remHtml()+`<h4>圖例</h4><div class="legend">
+    <div><span style="color:${TYPES.option.c}">◆</span> 選項：你可以選的路</div>
+    <div><span style="color:${TYPES.condition.c}">●</span> 條件：你在乎的事</div>
+    <div><span style="color:${TYPES.feeling.c}">♥</span> 感受：情緒或擔心</div><hr style="border:0;border-top:1px solid var(--line)">
+    <div><svg width="44" height="10"><line x1="0" y1="5" x2="36" y2="5" stroke="#26343a" stroke-width="2.4"/><path d="M44 5L35 1V9z" fill="#26343a"/></svg>因果：A 導致 B</div>
+    <div><svg width="44" height="10"><line x1="4" y1="5" x2="40" y2="5" stroke="#c2483f" stroke-width="2.4" stroke-dasharray="8 5"/><path d="M0 1L8 9M8 1L0 9M36 1L44 9M44 1L36 9" stroke="#c2483f" stroke-width="2"/></svg>衝突／互斥</div>
+    <div><svg width="44" height="10"><line x1="0" y1="5" x2="36" y2="5" stroke="#5b6b72" stroke-width="2.4" stroke-dasharray="2 5" stroke-linecap="round"/><path d="M44 5L35 1V9z" fill="#5b6b72"/></svg>依賴：先 A 才能 B</div></div>
+    <p class="hint">・雙擊空白處新增節點<br>・拖曳節點右側圓點連到另一個節點<br>・滾輪縮放，拖曳空白處平移<br>・Delete 刪除，Ctrl+Z 復原</p>`+marksHtml();bindMarks(s);bindRem(s);return}
+  if(sel.kind==='n'){
+    const n=cur.nodes.find(x=>x.id===sel.id);if(!n){sel=null;return renderSide()}
+    s.innerHTML=`<h4>節點</h4><label>想法</label><textarea id="fText" ${ro}>${esc(n.text)}</textarea>
+    <label>類型</label><div class="seg">${Object.keys(TYPES).map(k=>`<button ${ro} data-t="${k}" class="${n.type===k?'on':''}">${TYPES[k].i} ${TYPES[k].n}</button>`).join('')}</div>
+    <label>在意程度</label><div class="seg">${WN.map((x,i)=>`<button ${ro} data-w="${i+1}" class="${n.weight===i+1?'on':''}">${x}</button>`).join('')}</div>
+    <p style="margin-top:20px"><button class="danger" ${ro} id="fDel">刪除這個節點</button></p>`;
+    $('#fText').oninput=e=>{n.text=e.target.value;save();draw()};
+    $('#fText').onfocus=()=>snap();
+    s.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{snap();n.type=b.dataset.t;save();draw();renderSide()});
+    s.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{snap();n.weight=+b.dataset.w;save();draw();renderSide()});
+    $('#fDel').onclick=delSel;
+  }else{
+    const e=cur.edges.find(x=>x.id===sel.id);if(!e){sel=null;return renderSide()}
+    const nm=id=>esc((cur.nodes.find(n=>n.id===id)||{}).text||'（未命名）');
+    s.innerHTML=`<h4>連線</h4><p class="hint">${nm(e.from)} → ${nm(e.to)}</p><label>關係</label>
+    <div style="display:grid;gap:4px">${Object.keys(ETYPES).map(k=>`<button ${ro} data-e="${k}" class="${e.type===k?'on':''}">${ETYPES[k].n}</button>`).join('')}</div>
+    <label>說明（選填）</label><input id="fNote" value="${esc(e.note)}" ${ro}>
+    <p style="margin-top:16px;display:flex;gap:8px"><button ${ro} id="fSwap">交換方向</button><button class="danger" ${ro} id="fDel">刪除連線</button></p>`;
+    s.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{snap();e.type=b.dataset.e;save();draw();renderSide()});
+    $('#fNote').oninput=ev=>{e.note=ev.target.value;save();draw()};
+    $('#fNote').onfocus=()=>snap();
+    $('#fSwap').onclick=()=>{snap();[e.from,e.to]=[e.to,e.from];save();draw();renderSide()};
+    $('#fDel').onclick=delSel;
+  }
+}
+
+/* ===== 做出最終決定與封存 ===== */
+/* ===== 標記時刻 ===== */
+function addMark(note,auto,d){
+  d=d||cur;const i=d.marks.reduce((m,x)=>Math.max(m,x.index),0)+1;
+  const m={id:uid(),index:i,time:new Date().toISOString(),note,auto,image:''};d.marks.push(m);
+  captureImage(d).then(img=>{if(img){m.image=img;save();checkSpace();if(cur===d&&!sel)renderSide()}});
+  return m;
+}
+function checkSpace(){try{const n=(localStorage.getItem(KEY)||'').length;if(n>4e6)toast('儲存空間快滿了，請匯出備份，或刪除不需要的標記。')}catch(e){}}
+async function markNow(){
+  if(isDecided())return;
+  const note=await dialog('標記這一刻：把目前的畫面存下來。要寫一句註記嗎？（選填）',true,'標記','','例如：我改變主意了');
+  if(note===null)return;addMark(note.trim(),false);save();renderSide();toast('已標記');
+}
+$('#btnMark').onclick=markNow;
+function fmtT(t){return new Date(t).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}
+function marksHtml(){
+  const ms=cur.marks.slice().sort((a,b)=>a.index-b.index);
+  return '<h4 style="margin-top:22px">標記時刻</h4>'+(ms.length?ms.map(m=>`<div class="mk">${m.image?`<img src="${m.image}" data-v="${m.id}" title="放大">`:'<div class="noimg"></div>'}
+  <div><b>#${m.index}</b> ${esc(m.note)||'<small>（沒有註記）</small>'}<br><small>${fmtT(m.time)}</small><br><button data-me="${m.id}">編輯</button>${m.auto?'':`<button class="danger" data-md="${m.id}">刪除</button>`}</div></div>`).join(''):'<p class="hint">還沒有標記。按上方「標記這一刻」，可以留下目前的想法畫面。</p>');
+}
+function bindMarks(s){
+  s.querySelectorAll('[data-v]').forEach(i=>i.onclick=()=>viewMark(i.dataset.v));
+  s.querySelectorAll('[data-me]').forEach(b=>b.onclick=async()=>{const m=cur.marks.find(x=>x.id===b.dataset.me);const v=await dialog('修改 #'+m.index+' 的註記',true,'儲存',m.note,'');if(v===null)return;m.note=v.trim();save();renderSide()});
+  s.querySelectorAll('[data-md]').forEach(b=>b.onclick=async()=>{const m=cur.marks.find(x=>x.id===b.dataset.md);if(await dialog('刪除標記 #'+m.index+'？',false,'刪除')){cur.marks=cur.marks.filter(x=>x!==m);save();renderSide()}});
+}
+function viewMark(id){ // 依可用視窗等比例顯示完整圖片
+  const m=cur.marks.find(x=>x.id===id),mask=$('#mask'),dlg=$('#dlg');
+  if(!m||!m.image)return;
+  const previousFocus=document.activeElement;
+  dlg.classList.add('mark-preview');
+  dlg.innerHTML=`<div class="mark-image"><img src="${esc(m.image)}" alt="標記時刻 #${m.index} 的畫面"></div><p class="mark-note"><b>#${m.index}</b> ${esc(m.note)}　<small style="color:var(--mute)">${fmtT(m.time)}</small></p><div class="row"><button class="pri" id="lbX">關閉</button></div>`;
+  mask.classList.remove('hidden');
+  const close=()=>{mask.classList.add('hidden');dlg.classList.remove('mark-preview');mask.onclick=null;removeEventListener('keydown',onKey,true);if(previousFocus&&previousFocus.isConnected)previousFocus.focus()};
+  const onKey=e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();close()}};
+  addEventListener('keydown',onKey,true);
+  $('#lbX').onclick=close;mask.onclick=e=>{if(e.target===mask)close()};
+  $('#lbX').focus({preventScroll:true});
+}
+
+/* ===== 畫面擷取：由資料重建完整 SVG → Canvas → JPEG（不受目前視窗範圍影響） ===== */
+function buildSvg(d){
+  if(!d.nodes.length)return null;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  d.nodes.forEach(n=>{x0=Math.min(x0,n.x-nW(n)/2);x1=Math.max(x1,n.x+nW(n)/2);y0=Math.min(y0,n.y-nH(n)/2);y1=Math.max(y1,n.y+nH(n)/2)});
+  const P=36;x0-=P;y0-=P;x1+=P;y1+=P;const w=x1-x0,h=y1-y0;
+  const by=Object.fromEntries(d.nodes.map(n=>[n.id,n]));
+  let o=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x0} ${y0} ${w} ${h}" font-family="Noto Sans TC,PingFang TC,Microsoft JhengHei,sans-serif"><rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#eef2f3"/><defs>${document.querySelector('#svg defs').innerHTML}</defs>`;
+  d.edges.forEach(e=>{
+    const a=by[e.from],b=by[e.to];if(!a||!b)return;const p=clip(a,b.x,b.y),q=clip(b,a.x,a.y);
+    const st={cause:['#26343a',''],conflict:['#c2483f','8 5'],dependency:['#5b6b72','2 5']}[e.type];
+    const mk=e.type==='cause'?' marker-end="url(#arrC)"':e.type==='dependency'?' marker-end="url(#arrD)"':' marker-start="url(#xmk)" marker-end="url(#xmk)"';
+    o+=`<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="${st[0]}" stroke-width="2.4" stroke-dasharray="${st[1]}" stroke-linecap="round"${mk}/>`;
+    if(e.note)o+=`<text x="${(p[0]+q[0])/2}" y="${(p[1]+q[1])/2-6}" text-anchor="middle" font-size="12" fill="#26343a" paint-order="stroke" stroke="#eef2f3" stroke-width="4">${esc(e.note)}</text>`;
+  });
+  d.nodes.forEach(n=>{
+    const T=TYPES[n.type],nw=nW(n),nh=nH(n),lines=wrap((T.i+' '+n.text).trim(),WRAP[n.weight-1]),fs=n.weight===3?16:n.weight===1?13:14;
+    o+=`<rect x="${n.x-nw/2}" y="${n.y-nh/2}" width="${nw}" height="${nh}" rx="${n.type==='option'?6:n.type==='condition'?nh/2:14}" fill="${T.c}"/>`;
+    o+=`<text text-anchor="middle" font-size="${fs}" fill="#fff">`+lines.map((l,i)=>`<tspan x="${n.x}" y="${n.y-(lines.length-1)*fs*.6+fs*.35+i*fs*1.2}">${esc(l)}</tspan>`).join('')+'</text>';
+  });
+  return{svg:o+'</svg>',w,h};
+}
+function captureImage(d){
+  return new Promise(res=>{
+    const s=buildSvg(d);if(!s)return res('');
+    const img=new Image();
+    img.onload=()=>{try{
+      const k=Math.min(1.5,1200/Math.max(s.w,s.h)),c=document.createElement('canvas');
+      c.width=Math.round(s.w*k);c.height=Math.round(s.h*k);
+      const g=c.getContext('2d');g.fillStyle='#eef2f3';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+      res(c.toDataURL('image/jpeg',.72));
+    }catch(e){res('')}};
+    img.onerror=()=>res('');
+    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s.svg);
+  });
+}
+
+/* ===== 做出最終決定與封存 ===== */
+function updateBar(){
+  const dec=isDecided(),b=$('#btnDecide'),bn=$('#banner');
+  $('#btnMark').classList.toggle('hidden',dec);b.textContent=dec?'重新開啟決策':'做出決定';b.className=dec?'':'pri';
+  if(dec){const o=cur.nodes.find(n=>n.id===cur.decision.optionId);
+    bn.innerHTML='<b>最終選擇：'+esc(o?o.text:'（已刪除的選項）')+'</b><div>理由：'+esc(cur.decision.reason).replace(/\n/g,'<br>')+'</div>';bn.classList.remove('hidden')}
+  else bn.classList.add('hidden');
+}
+function decide(){
+  const opts=cur.nodes.filter(n=>n.type==='option');
+  if(!opts.length)return toast('請先新增至少一個「選項」節點。');
+  const m=$('#mask');
+  $('#dlg').innerHTML=`<p><b>你最後選擇哪一個？</b></p>${opts.map(o=>`<label style="display:flex;gap:8px;margin:8px 0;align-items:center;cursor:pointer"><input type="radio" name="dopt" value="${o.id}" style="width:auto">${esc(o.text||'（未命名）')}</label>`).join('')}
+  <p style="margin-top:14px"><b>寫下你的理由</b></p><textarea id="dReason" placeholder="為什麼這樣選？日後回頭看時會用到。"></textarea>
+  <div id="dErr" style="color:var(--conf);font-size:13px;min-height:18px;margin-top:6px"></div>
+  <div class="row"><button id="dNo">取消</button><button class="pri" id="dOk">確認決定</button></div>`;
+  m.classList.remove('hidden');
+  $('#dNo').onclick=()=>m.classList.add('hidden');
+  $('#dOk').onclick=()=>{
+    const r=document.querySelector('input[name=dopt]:checked'),why=$('#dReason').value.trim();
+    if(!r)return $('#dErr').textContent='請選一個選項。';
+    if(!why)return $('#dErr').textContent='請寫下一段理由。';
+    cur.decision={optionId:r.value,reason:why,time:new Date().toISOString()};cur.status='decided';
+    addMark('最終決定',true);sel=null;save();m.classList.add('hidden');updateBar();draw();renderSide();fit();toast('已封存這個決策');
+  };
+}
+async function reopen(){
+  if(!await dialog('重新開啟後，這個決策會回到「進行中」，原本的決定理由會保留在一個標記裡。確定嗎？',false,'重新開啟'))return;
+  const o=cur.nodes.find(n=>n.id===cur.decision.optionId);
+  addMark('重新開啟（原選擇：'+(o?o.text:'已刪除的選項')+'；理由：'+cur.decision.reason+'）',false);
+  cur.decision=null;cur.status='active';save();updateBar();draw();renderSide();fit();
+}
+$('#btnDecide').onclick=()=>isDecided()?reopen():decide();
+
+/* ===== 規則式提醒：只用簡單規則偵測，一律以提問或中性陳述呈現，不評論、不下結論 ===== */
+const remEnabled=()=>{try{return localStorage.getItem(KEY+'.rem')!=='0'}catch(e){return true}};
+function reminders(){
+  if(isDecided()||!cur.nodes.length)return[];
+  const dis=cur.dismissed||[],N=cur.nodes,E=cur.edges,out=[];
+  const nm=n=>'『'+esc(n.text.trim()||'未命名')+'』',push=(k,t)=>{if(!dis.includes(k))out.push({k,t})};
+  const linked=new Set();E.forEach(e=>{linked.add(e.from);linked.add(e.to)});
+  const opts=N.filter(n=>n.type==='option'),conds=N.filter(n=>n.type==='condition');
+  const conn=(a,b)=>E.some(e=>(e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id));
+  // 1. 沒有任何連線的想法
+  N.filter(n=>!linked.has(n.id)).slice(0,3).forEach(n=>push('iso:'+n.id,`${nm(n)}目前沒有和其他想法連結，它和哪些想法有關？`));
+  // 2. 條件只連到其中一個選項
+  if(opts.length>=2)conds.forEach(c=>{const co=opts.filter(o=>conn(c,o));
+    if(co.length===1)push('cond:'+c.id,`${nm(c)}和${nm(opts.find(o=>o!==co[0]))}有關嗎？`)});
+  // 3. 所有權重都相同
+  if(N.length>=2&&N.every(n=>n.weight===N[0].weight))push('same','目前每個想法都一樣在意，有沒有哪些特別重要或比較不重要？');
+  // 4. 只有一個選項
+  if(opts.length===1)push('one:'+opts[0].id,`除了${nm(opts[0])}，還有其他可能的做法嗎？包含什麼都不做。`);
+  // 5. 沒有感受節點
+  if(!N.some(n=>n.type==='feeling'))push('nofeel','做這個決定時，心裡有什麼感覺嗎？');
+  // 6. 條件很多但沒有衝突連線
+  if(conds.length>=4&&!E.some(e=>e.type==='conflict'))push('noconf','這些條件之間有互相拉扯或無法同時滿足的嗎？');
+  return out.slice(0,4);
+}
+function remHtml(){
+  if(isDecided())return '';
+  const on=remEnabled(),list=on?reminders():[];
+  return `<label style="display:flex;gap:6px;align-items:center;margin:0 0 8px"><input type="checkbox" id="remOn" style="width:auto" ${on?'checked':''}>顯示提醒</label>`
+   +(list.length?'<h4>想一想</h4>'+list.map(r=>`<div class="rem">${r.t}<br><button data-rd="${r.k}">略過</button></div>`).join('')+'<div style="height:12px"></div>':'');
+}
+function bindRem(s){
+  const c=s.querySelector('#remOn');if(!c)return;
+  c.onchange=()=>{try{localStorage.setItem(KEY+'.rem',c.checked?'1':'0')}catch(e){}renderSide()};
+  s.querySelectorAll('[data-rd]').forEach(b=>b.onclick=()=>{cur.dismissed=(cur.dismissed||[]).concat(b.dataset.rd);save();renderSide()});
+}
+
+/* ===== 回放模式（唯讀，只顯示各標記時刻儲存的畫面） ===== */
+let rp={i:0,ms:[]};
+function openReplay(){
+  const ms=cur.marks.slice().sort((a,b)=>a.index-b.index),R=$('#replay');rp={i:0,ms};
+  R.innerHTML=`<div class="rtop"><button id="rpX">← 離開回放</button><b>${esc(cur.title)}</b><span class="hint">回放：只看畫面，不能修改</span></div>
+  <div class="rimg"><img id="rpImg" alt=""><div class="hint" id="rpNo"></div></div><div class="rinfo" id="rpInfo"></div>
+  <div class="rtl"><div class="rnodes">${ms.map((m,i)=>`<button data-i="${i}" title="${esc(m.note)}">#${m.index} ${esc(m.note)||'—'}</button>`).join('')}</div>
+  <div class="rctl"><button id="rpP">◀ 上一個</button><input type="range" id="rpS" min="0" max="${Math.max(0,ms.length-1)}" value="0" ${ms.length<2?'disabled':''}><button id="rpN">下一個 ▶</button></div></div>`;
+  R.classList.remove('hidden');
+  $('#rpX').onclick=closeReplay;$('#rpP').onclick=()=>rpGo(rp.i-1);$('#rpN').onclick=()=>rpGo(rp.i+1);
+  $('#rpS').oninput=e=>rpGo(+e.target.value);
+  R.querySelectorAll('.rnodes button').forEach(b=>b.onclick=()=>rpGo(+b.dataset.i));
+  rpGo(0);
+}
+function closeReplay(){$('#replay').classList.add('hidden');$('#replay').innerHTML=''}
+function rpGo(i){
+  const n=rp.ms.length;
+  if(!n){$('#rpImg').style.display='none';$('#rpNo').textContent='還沒有標記時刻。回到畫布按「標記這一刻」就會出現在這裡。';$('#rpInfo').textContent='';return}
+  i=Math.max(0,Math.min(n-1,i));rp.i=i;const m=rp.ms[i],img=$('#rpImg');
+  if(m.image){img.src=m.image;img.style.display='';$('#rpNo').textContent=''}
+  else{img.style.display='none';$('#rpNo').textContent='這個標記沒有畫面圖片。'}
+  $('#rpInfo').innerHTML=`<b>#${m.index}</b>　${esc(m.note)||'<span class="hint">（沒有註記）</span>'}　<small style="color:var(--mute)">${fmtT(m.time)}${m.auto?'　自動標記':''}</small>`;
+  $('#rpS').value=i;$('#rpP').disabled=i===0;$('#rpN').disabled=i===n-1;
+  document.querySelectorAll('#replay .rnodes button').forEach((b,j)=>{b.classList.toggle('on',j===i);if(j===i)b.scrollIntoView({block:'nearest',inline:'center'})});
+}
+$('#btnReplay').onclick=openReplay;
+
+/* ===== 匯入驗證：只保留合法欄位，壞掉的節點／連線直接丟棄 ===== */
+function cleanImport(x){
+  if(!x||typeof x!=='object'||typeof x.title!=='string'||!Array.isArray(x.nodes)||!Array.isArray(x.edges))throw 0;
+  const now=new Date().toISOString(),ids=new Set();
+  const nodes=x.nodes.filter(n=>n&&typeof n.id==='string'&&TYPES[n.type]).map(n=>{ids.add(n.id);return{id:n.id,type:n.type,text:String(n.text||''),weight:[1,2,3].includes(n.weight)?n.weight:2,x:+n.x||0,y:+n.y||0}});
+  const edges=x.edges.filter(e=>e&&ids.has(e.from)&&ids.has(e.to)&&ETYPES[e.type]).map(e=>({id:String(e.id||uid()),from:e.from,to:e.to,type:e.type,note:String(e.note||'')}));
+  const marks=(Array.isArray(x.marks)?x.marks:[]).filter(m=>m&&typeof m==='object').map((m,i)=>({id:String(m.id||uid()),index:+m.index||i+1,time:m.time||now,note:String(m.note||''),auto:!!m.auto,image:typeof m.image==='string'&&m.image.startsWith('data:image/')?m.image:''}));
+  let decision=null,status='active';
+  if(x.status==='decided'&&x.decision&&ids.has(x.decision.optionId)){decision={optionId:x.decision.optionId,reason:String(x.decision.reason||''),time:x.decision.time||now};status='decided'}
+  return{id:typeof x.id==='string'?x.id:'',title:x.title.slice(0,80)||'未命名的決策',status,createdAt:x.createdAt||now,updatedAt:x.updatedAt||now,nodes,edges,marks,decision,dismissed:Array.isArray(x.dismissed)?x.dismissed.map(String):[]};
+}
+
+/* ===== 匯出：JSON 或 PNG，檔名含標題與日期 ===== */
+function fname(ext){return cur.title.replace(/[\\/:*?"<>|]/g,'_').slice(0,40)+'_'+new Date().toISOString().slice(0,10)+ext}
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
+function exportJson(){download(new Blob([JSON.stringify(cur,null,1)],{type:'application/json'}),fname('.json'));toast('已匯出 JSON')}
+function exportPng(){
+  const d=cur,sv=buildSvg(d);if(!sv)return toast('畫布上還沒有節點，沒有東西可以匯出。');
+  const img=new Image();
+  img.onerror=()=>toast('圖片匯出失敗，請改用匯出 JSON。');
+  img.onload=()=>{
+    const k=Math.min(2,2400/Math.max(sv.w,sv.h)),cw=Math.round(sv.w*k),ch=Math.round(sv.h*k),CW=Math.max(cw,900);
+    const font='20px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif',lines=[];
+    if(d.status==='decided'&&d.decision){ // 已決定：圖片下方附上最終選擇與理由
+      const o=d.nodes.find(n=>n.id===d.decision.optionId),m=document.createElement('canvas').getContext('2d');m.font=font;
+      lines.push('最終選擇：'+(o?o.text:'（已刪除的選項）'));
+      ('理由：'+d.decision.reason).split('\n').forEach(raw=>{let cur2='';for(const c of raw){if(m.measureText(cur2+c).width>CW-80){lines.push(cur2);cur2=c}else cur2+=c}lines.push(cur2)});
+    }
+    const LH=32,ph=lines.length?lines.length*LH+48:0,c=document.createElement('canvas');c.width=CW;c.height=ch+ph;
+    const g=c.getContext('2d');g.fillStyle='#eef2f3';g.fillRect(0,0,c.width,c.height);g.drawImage(img,(CW-cw)/2,0,cw,ch);
+    if(lines.length){g.fillStyle='#ece6f5';g.fillRect(0,ch,CW,ph);g.fillStyle='#26343a';g.textBaseline='middle';
+      lines.forEach((l,i)=>{g.font=(i===0?'bold ':'')+font;g.fillText(l,40,ch+24+LH/2+i*LH)})}
+    c.toBlob(b=>{if(b){download(b,fname('.png'));toast('已匯出圖片')}else toast('圖片匯出失敗，請改用匯出 JSON。')},'image/png');
+  };
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(sv.svg);
+}
+function exportDlg(){
+  const m=$('#mask'),d=$('#dlg');d.style.width='';
+  d.innerHTML=`<p><b>匯出「${esc(cur.title)}」</b></p><p class="hint">JSON 包含節點、連線、標記和畫面圖片，可以再匯入還原。PNG 是目前畫布的完整圖片${isDecided()?'，並附上最終選擇與理由':''}。</p>
+  <div style="display:grid;gap:8px"><button class="pri" id="xJ">匯出 JSON</button><button id="xP">只匯出圖片（PNG）</button><button id="xN">取消</button></div>`;
+  m.classList.remove('hidden');
+  $('#xN').onclick=()=>m.classList.add('hidden');
+  $('#xJ').onclick=()=>{m.classList.add('hidden');exportJson()};
+  $('#xP').onclick=()=>{m.classList.add('hidden');exportPng()};
+}
+$('#btnExport').onclick=exportDlg;
+
+/* ===== 首次使用說明（第一次開啟會自動顯示，之後可按「說明」） ===== */
+function showHelp(){
+  const m=$('#mask'),d=$('#dlg');d.style.width='min(560px,92vw)';
+  d.innerHTML=`<div id="help"><h3>歡迎使用思路圖</h3>
+  <p class="hint" style="margin-bottom:12px">這裡幫你把想不透的事攤開來看。App 只負責整理，不計分、不推薦，決定永遠是你的。</p>
+  <ol><li><b>開始：</b>新增決策，回答四個小問題，想法會自動變成畫布上的節點。</li>
+  <li><b>整理：</b>雙擊空白處新增節點；拖曳節點右側的圓點連到另一個節點，再選它們的關係（因果、衝突、依賴）。點一下節點可以改文字、類型和在意程度。</li>
+  <li><b>標記這一刻：</b>想法有變化時按一下，把當時的畫面存起來。之後用「回放」看自己是怎麼想的。</li>
+  <li><b>做出決定：</b>選一個選項、寫下理由，整個思考過程就會封存。之後可以重新開啟。</li>
+  <li><b>備份：</b>資料只存在這台電腦的瀏覽器裡，重要的決策請用「匯出」備份。</li></ol>
+  <div class="row"><button class="pri" id="hX">開始使用</button></div></div>`;
+  m.classList.remove('hidden');
+  const close=()=>{m.classList.add('hidden');d.style.width='';m.onclick=null;try{localStorage.setItem(KEY+'.help','1')}catch(e){}};
+  $('#hX').onclick=close;m.onclick=e=>{if(e.target===m)close()};
+}
+$('#btnHelp').onclick=showHelp;$('#btnHelp0').onclick=showHelp;
+
+/* ===== 標題編輯（即時儲存） ===== */
+$('#ttl').oninput=e=>{if(cur){cur.title=e.target.value;save()}};
+$('#ttl').onblur=e=>{if(cur&&!e.target.value.trim()){cur.title='未命名的決策';e.target.value=cur.title;save()}};
+$('#ttl').onkeydown=e=>{if(e.key==='Enter')e.target.blur()};
+
+/* ===== 啟動 ===== */
+renderHome();
+// 重新整理後回到上次開啟的決策
+try{const last=localStorage.getItem(KEY+'.cur');if(last&&db.some(x=>x.id===last))openD(last)}catch(e){}
+try{if(!localStorage.getItem(KEY+'.help'))showHelp()}catch(e){}
+addEventListener('resize',()=>{if(cur)draw()});
+</script>
+</body>
+</html>
